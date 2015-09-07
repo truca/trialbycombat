@@ -73,7 +73,7 @@ struct tabu_list{
 struct tabu_list tabu;
 struct time_container{
     int limit;
-    time_t start;
+    clock_t start;
 };
 struct time_container tiempo;
 
@@ -501,18 +501,22 @@ double evaluate_solution(struct solution sol){
     }
     
     sol.value = var.process_move_cost*pmc+var.service_move_cost*smc+var.machine_move_cost*mmc+lc+bc;
+    printf("New solution value: %lf\n", sol.value);
     return var.process_move_cost*pmc+var.service_move_cost*smc+var.machine_move_cost*mmc+lc+bc;
 }
 void verify_best_solution(struct solution solution){
     int i;
-    printf("Verifying...\n");
+    //printf("Verifying...\n");
     if(solution.value < sol.best_value){
+        //printf("entered");
         sol.best_value = solution.value;
-        printf("Better solution found!\nCost: %lf", sol.best_value);
+        //printf("Better solution found!\nCost: %lf", sol.best_value);
         for(i=0; i < var.processes_amount; i++){
             sol.best_process_asignations[i] = solution.process_asignations[i];
         }
+        //printf("almost done");
     }
+    //printf("End of Verify\n");
 }
 void evaluate_and_verify_solution(struct solution sol){
     evaluate_solution(sol);
@@ -579,11 +583,19 @@ struct possible_moves get_possible_moves(int process_number){
 
 void pick_best_option(struct possible_moves moves, int process){
     if(moves.length){
-        int r = rand() % moves.length;
-        //printf("random value: %d\n\n", r);
-        //r = Max + rand() / (RAND_MAX / (0 - Max + 1) + 1) - 1;
-        //return r; 
-        sol.process_asignations[process] = moves.possible_moves[r];
+        int aux = sol.process_asignations[process], r, machine, i;
+        double min_value = -1, result;
+        for(i=0; i < moves.length; i++){
+            r = rand() % moves.length;
+            sol.process_asignations[process] = moves.possible_moves[r];
+            update_used_resources();
+            result = evaluate_solution(sol);
+            if(min_value > result || min_value == -1){
+                min_value = result;
+                machine = moves.possible_moves[r];
+            }
+        }
+        sol.process_asignations[process] = moves.possible_moves[machine];
         update_used_resources();
         evaluate_and_verify_solution(sol);
     }
@@ -675,26 +687,31 @@ int add_tabu(int process){
 }
 
 void tabu_search(){
+    //printf("Entro a TS!");
     int i, process;
     struct possible_moves moves;
     //elegir un proceso random
-    while(((int)(time(NULL) - tiempo.start)) < tiempo.limit){
+    
+    //while(((float)(clock() - tiempo.start))/CLOCKS_PER_SEC < tiempo.limit){
+    //for(i=0; i < 2; i++){
+        
         process = rand() % var.processes_amount;
         while(is_tabu(process)){
-            int process = rand() % var.processes_amount;    
+            process = rand() % var.processes_amount;    
         }
         moves = get_possible_moves(process);
         
         pick_option(moves, process);
         add_tabu(process);
-    }
+        free(moves.possible_moves);
+    //}
 }
 
 
 
 
 int main( int argc, char *argv[] ){
-    tiempo.start = time(NULL);
+    tiempo.start = clock();
     tiempo.limit = strtol(argv[2], NULL, 10);
     
     srand(strtol(argv[10], NULL, 10));
@@ -705,8 +722,9 @@ int main( int argc, char *argv[] ){
     //hasta aca va todo bien
         //falta que se filtre mejor las opciones 
         //y que el greedy elija las mejores opciones
+    //printf("entrando a Greedy");
     greedy();
-    
+    //printf("Sali de Greedy!");
     tabu_search();
     
     //print solution

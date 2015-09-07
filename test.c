@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 struct container{
     struct item *items;  
@@ -22,11 +23,24 @@ create_items(int items_size, int prices_size){
     }
 }
 
-int main(){
-    create_items( 3, 3);
+int main( int argc, char *argv[] ){
+    
+    clock_t t;
+    int f;
+    t = clock();
+    //printf ("Calculating...\n");
+    //f = frequency_of_primes (99999);
+    //printf ("The number of primes lower than 100,000 is: %d\n",f);
+    while(((float)(clock() - t))/CLOCKS_PER_SEC < 1){
+        printf("Ha pasado: %f\n", ((float)(clock() - t))/CLOCKS_PER_SEC);
+    }
+    printf("Ended");
+    //printf ("It took me %d clicks (%f seconds).\n",t,((float)t)/CLOCKS_PER_SEC);
+    return 0;
+    /*create_items( 3, 3);
     cont.items[0].prices[0] = 4;
     
-    printf("worked: %d\n", cont.items[0].prices[0]);
+    printf("worked: %d\n", cont.items[0].prices[0]);*/
     
     /*struct container cont;
     struct item items[2];

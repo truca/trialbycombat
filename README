@@ -6,3 +6,6 @@ Forma en que será llamado el programa:
 
 Ejemplo:
 ./mrp -t 300 -p test_instance -i mrp_original_sol -o salida.txt -s 100
+
+IMPORTANTE:
+No se incluye un MAKEFILE ya que todo el código esta en un único archivo y por tanto no es necesario
