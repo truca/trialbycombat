@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <float.h>
+#include <time.h>
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
@@ -72,7 +73,7 @@ struct tabu_list{
 struct tabu_list tabu;
 struct time_container{
     int limit;
-    int start;
+    time_t start;
 };
 struct time_container tiempo;
 
@@ -674,23 +675,28 @@ int add_tabu(int process){
 }
 
 void tabu_search(){
-    int i;
+    int i, process;
+    struct possible_moves moves;
     //elegir un proceso random
-    int process = rand() % var.processes_amount;
-    while(is_tabu(process)){
-        int process = rand() % var.processes_amount;    
+    while(((int)(time(NULL) - tiempo.start)) < tiempo.limit){
+        process = rand() % var.processes_amount;
+        while(is_tabu(process)){
+            int process = rand() % var.processes_amount;    
+        }
+        moves = get_possible_moves(process);
+        
+        pick_option(moves, process);
+        add_tabu(process);
     }
-    struct possible_moves moves = get_possible_moves(process);
-    
-    pick_option(moves, process);
-    add_tabu(process);
 }
 
 
 
 
 int main( int argc, char *argv[] ){
-    tiempo.start = 
+    tiempo.start = time(NULL);
+    tiempo.limit = strtol(argv[2], NULL, 10);
+    
     srand(strtol(argv[10], NULL, 10));
     read_file(argv[4]);
     read_initial_solution(argv[6]);
