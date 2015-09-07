@@ -1,5 +1,5 @@
 para compilar:
-gcc main_backup.c -o mrp
+gcc main.c -o mrp
 
 Forma en que será llamado el programa:
 ./mrp -t time_limit -p instance_filename -i original_solution_filename -o new_solution_filename -s seed
