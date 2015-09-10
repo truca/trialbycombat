@@ -78,7 +78,7 @@ struct time_container{
 struct time_container tiempo;
 
 void read_resources(FILE *file){
-    int resources_amount, i;
+    int resources_amount, i, num, length;
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
@@ -90,14 +90,20 @@ void read_resources(FILE *file){
     var.resources = malloc(sizeof(struct resource)*resources_amount);
     var.resources_amount = resources_amount;
     
+    //getline(&line, &len, file);
     for(i = 0; i<resources_amount; i++){
         getline(&line, &len, file);
-        getline(&line, &len, file);
-        printf("transient: %s\n", line);
-        var.resources[i].transient = atoi(line);
-        getline(&line, &len, file);
-        printf("load_cost: %s\n", line);
-        var.resources[i].weight_load_cost = atoi(line);
+        //getting transient
+        sscanf( line, "%d%n", &num, &length);
+        var.resources[i].transient = num;
+        line += length;
+        //printf("transient: %d\n", num);
+        
+        //getting weight load cost
+        sscanf( line, "%d%n", &num, &length);
+        var.resources[i].weight_load_cost = num;
+        line += length;
+        //printf("load_cost: %d\n", num);
     }
 }
 void read_machines(FILE *file){
@@ -117,13 +123,12 @@ void read_machines(FILE *file){
         //blank line
         getline(&line, &len, file);
         //getting neighborhood
-        getline(&line, &len, file);
-        var.machines[i].neighborhood = atoi(line);
+        sscanf( line, "%d%n", &num, &length);
+        var.machines[i].neighborhood = num;
         //getting location
-        getline(&line, &len, file);
-        var.machines[i].location = atoi(line);
+        sscanf( line, "%d%n", &num, &length);
+        var.machines[i].location = num;
         //getting capacities
-        getline(&line, &len, file);
         var.machines[i].capacities = malloc(sizeof(int)*var.resources_amount);
         var.machines[i].resources_used = malloc(sizeof(int)*var.resources_amount);
         //var.machines[i].transient_resources_used = malloc(sizeof(int)*var.resources_amount);
@@ -137,7 +142,6 @@ void read_machines(FILE *file){
             line += length;
         }
         //getting safety capacities
-        getline(&line, &len, file);
         var.machines[i].safety_capacities = malloc(sizeof(int)*var.resources_amount);
         //printf("Safety Capacities:\n");
         for(j=0; j < var.resources_amount; j++){
@@ -147,7 +151,6 @@ void read_machines(FILE *file){
             line += length;
         }
         //getting moving costs
-        getline(&line, &len, file);
         var.machines[i].machine_move_costs = malloc(sizeof(int)*machines_amount);
         //printf("Moving Costs:\n");
         for(j=0; j < machines_amount; j++){
@@ -157,11 +160,6 @@ void read_machines(FILE *file){
             line += length;
         }
     }
-    /*for(i=0; i < machines_amount; i++){
-        for(j=0; j < var.resources_amount; j++){
-            printf("machine %d, resource %d: %d\n", i, j, var.machines[i].capacities[j]);
-        }
-    }*/
 }
 void read_services(FILE *file){
     int services_amount, i, j, num, length;
@@ -177,7 +175,7 @@ void read_services(FILE *file){
     var.services = malloc(sizeof(struct service)*services_amount);
     
     for(i=0; i < services_amount; i++){
-        getline(&line, &len, file);
+        //getline(&line, &len, file);
         getline(&line, &len, file);
         var.services[i].spread_min = atoi(line);
         //printf("spread_min: %s \n", line);
@@ -354,7 +352,6 @@ void update_used_resources(){
 int available_resources(int machine, int resource){
     return var.machines[machine].capacities[resource]-var.machines[machine].resources_used[resource];
 }
-
 /*int solution_qualifies(struct solution solution){
     int i,j, k;
     //verify capacity constraints
@@ -579,8 +576,6 @@ struct possible_moves get_possible_moves(int process_number){
     return moves;*/
 }
 
-
-
 void pick_best_option(struct possible_moves moves, int process){
     if(moves.length){
         int aux = sol.process_asignations[process], r, machine, i;
@@ -611,7 +606,6 @@ void pick_option(struct possible_moves moves, int process){
         evaluate_and_verify_solution(sol);
     }
 }
-
 void greedy(){
     //guardar la suma de recursos que necesitan todos los procesos
     int i,j,k, proccesses_resources[var.processes_amount][2];
@@ -669,7 +663,6 @@ void initialize_tabu_list(int tabu_list_size){
         tabu.list[i] = -1;
     }
 }
-
 int is_tabu(int process){
     int i;
     for(i = 0; i < tabu.length; i++){
@@ -677,7 +670,6 @@ int is_tabu(int process){
     }
     return 0;
 }
-
 int add_tabu(int process){
     int i;
     for(i=1; i < tabu.length; i++){
@@ -685,7 +677,6 @@ int add_tabu(int process){
     }
     tabu.list[tabu.length-1] = process;
 }
-
 void tabu_search(){
     //printf("Entro a TS!");
     int i, process;
