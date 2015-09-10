@@ -175,18 +175,22 @@ void read_services(FILE *file){
     var.services = malloc(sizeof(struct service)*services_amount);
     
     for(i=0; i < services_amount; i++){
+        getline(&line, &len, file);
         //getline(&line, &len, file);
-        getline(&line, &len, file);
-        var.services[i].spread_min = atoi(line);
-        //printf("spread_min: %s \n", line);
-        getline(&line, &len, file);
-        //printf("dependencies: %s \n", line);
-        var.services[i].amount_of_dependencies = atoi(line);
+        sscanf( line, "%d%n", &num, &length);
+        var.services[i].spread_min = num;
+        //printf("spread_min: %d \n", num);
+        line += length;
+        sscanf( line, "%d%n", &num, &length);
+        //printf("dependencies: %d \n", num);
+        var.services[i].amount_of_dependencies = num;
         var.services[i].dependent_on_service = malloc(sizeof(int)*var.services[i].amount_of_dependencies);
+        line += length;
         for(j=0; j < var.services[i].amount_of_dependencies; j++){
-            getline(&line, &len, file);
-            //printf("dependency %d: %s \n", j, line);
-            var.services[i].dependent_on_service[j] = atoi(line);
+            sscanf( line, "%d%n", &num, &length);
+            //printf("dependency %d: %d \n", j, num);
+            var.services[i].dependent_on_service[j] = num;
+            line += length;
         }
     }
 }
@@ -208,11 +212,11 @@ void read_processes(FILE *file){
         //blank line
         getline(&line, &len, file);
         //getting service
-        getline(&line, &len, file);
-        //printf("Belongs to service: %s\n", line);
-        var.processes[i].service = atoi(line);
+        sscanf( line, "%d%n", &num, &length);
+        //printf("Belongs to service: %d\n", num);
+        var.processes[i].service = num;
+        line += length;
         //getting requirements
-        getline(&line, &len, file);
         var.processes[i].requirements = malloc(sizeof(int)*var.resources_amount);
         //printf("Requirements:\n");
         for(j=0; j < var.resources_amount; j++){
@@ -222,9 +226,10 @@ void read_processes(FILE *file){
             line += length;
         }
         //getting move_cost
-        getline(&line, &len, file);
-        //printf("process move cost: %s\n", line);
-        var.processes[i].process_move_cost = atoi(line);
+        sscanf( line, "%d%n", &num, &length);
+        //printf("process move cost: %d\n", num);
+        var.processes[i].process_move_cost = num;
+        line += length;
     }
 }
 void read_balance_cost(FILE *file){
@@ -267,21 +272,30 @@ void read_balance_cost(FILE *file){
     }
 }
 void read_costs(FILE *file){
+    int num, length;
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
     
     getline(&line, &len, file);
-    printf("process move cost: %s", line);
-    var.process_move_cost = atoi(line);
     
-    getline(&line, &len, file);
-    printf("service move cost: %s", line);
-    var.service_move_cost = atoi(line);
+    sscanf( line, "%d%n", &num, &length);
+    //getline(&line, &len, file);
+    printf("process move cost: %d\n", num);
+    var.process_move_cost = num;
+    line += length;
     
-    getline(&line, &len, file);
-    printf("machine move cost: %s", line);
-    var.machine_move_cost = atoi(line);
+    sscanf( line, "%d%n", &num, &length);
+    //getline(&line, &len, file);
+    printf("service move cost: %d\n", num);
+    var.service_move_cost = num;
+    line += length;
+    
+    sscanf( line, "%d%n", &num, &length);
+    //getline(&line, &len, file);
+    printf("machine move cost: %d\n", num);
+    var.machine_move_cost = num;
+    //line += length;
 }
 
 void read_file(char *filename){
