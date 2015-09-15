@@ -129,8 +129,10 @@ void read_machines(FILE *file){
         sscanf( line, "%d%n", &num, &length);
         var.machines[i].location = num;
         //getting capacities
+        printf("getting capacities\n");
         var.machines[i].capacities = malloc(sizeof(int)*var.resources_amount);
         var.machines[i].resources_used = malloc(sizeof(int)*var.resources_amount);
+        printf("ra alone: %d\n", var.resources_amount);
         //var.machines[i].transient_resources_used = malloc(sizeof(int)*var.resources_amount);
         //printf("Capacity:\n");
         for(j=0; j < var.resources_amount; j++){
@@ -336,7 +338,7 @@ void read_initial_solution(char *filename){
         getline(&line, &len, file);
         for(j=0; j < var.processes_amount; j++){
             sscanf( line, "%d%n", &num, &length);
-            printf("The process %d is assigned to the machine %d\n", j, num);
+            //printf("The process %d is assigned to the machine %d\n", j, num);
             sol.process_asignations[j]=num;
             sol.initial_solution[j]=num;
             line += length;
@@ -467,7 +469,7 @@ struct possible_moves resizeOptions(struct possible_moves moves) {
     //printf("Size of options after realloc %lu\n", sizeof(&options)/sizeof(int));
 }
 
-double evaluate_solution(struct solution sol){
+double evaluate_solution(){
     double pmc = 0, smc = 0, mmc = 0, lc = 0, bc = 0;
     int i, j, k;
     //process move costs
@@ -496,6 +498,7 @@ double evaluate_solution(struct solution sol){
     //load costs
     for(i=0; i < var.machines_amount; i++){
         for(j=0; j < var.resources_amount; j++){
+            printf("ma: %d, ra: %d, wlc: %d, sc: %d\n", var.machines_amount, var.resources_amount, var.resources[j].weight_load_cost, var.machines[i].safety_capacities[0]);
             lc += var.resources[j].weight_load_cost*max(0, (var.machines[i].capacities[j]-var.machines[i].safety_capacities[j]));
         }
     }
@@ -515,23 +518,25 @@ double evaluate_solution(struct solution sol){
     printf("New solution value: %lf\n", sol.value);
     return var.process_move_cost*pmc+var.service_move_cost*smc+var.machine_move_cost*mmc+lc+bc;
 }
-void verify_best_solution(struct solution solution){
+void verify_best_solution(){
     int i;
     //printf("Verifying...\n");
-    if(solution.value < sol.best_value){
+    if(sol.value < sol.best_value){
         //printf("entered");
-        sol.best_value = solution.value;
+        sol.best_value = sol.value;
         //printf("Better solution found!\nCost: %lf", sol.best_value);
         for(i=0; i < var.processes_amount; i++){
-            sol.best_process_asignations[i] = solution.process_asignations[i];
+            sol.best_process_asignations[i] = sol.process_asignations[i];
         }
         //printf("almost done");
     }
     //printf("End of Verify\n");
 }
-void evaluate_and_verify_solution(struct solution sol){
-    evaluate_solution(sol);
-    verify_best_solution(sol);
+void evaluate_and_verify_solution(){
+    printf("start evaluating");
+    evaluate_solution();
+    printf("end evaluating and starting verify");
+    verify_best_solution();
 }
 
 void print_solution(){
@@ -712,9 +717,6 @@ void tabu_search(){
     //}
 }
 
-
-
-
 int main( int argc, char *argv[] ){
     tiempo.start = clock();
     tiempo.limit = strtol(argv[2], NULL, 10);
@@ -722,9 +724,11 @@ int main( int argc, char *argv[] ){
     srand(strtol(argv[10], NULL, 10));
     read_file(argv[4]);
     read_initial_solution(argv[6]);
-    evaluate_and_verify_solution(sol);
-    initialize_tabu_list(1);
+    //printf("End reading solution;\n");
     //hasta aca va todo bien
+    evaluate_and_verify_solution();
+    initialize_tabu_list(1);
+    
         //falta que se filtre mejor las opciones 
         //y que el greedy elija las mejores opciones
     //printf("entrando a Greedy");
