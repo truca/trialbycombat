@@ -66,8 +66,12 @@ struct possible_moves{
     int* possible_moves;
     int length;
 };
+struct tabu_item{
+	int machine;
+	int process;	
+};
 struct tabu_list{
-    int* list;
+    struct tabu_item* list;
     int length;
 };
 struct tabu_list tabu;
@@ -77,11 +81,14 @@ struct time_container{
 };
 struct time_container tiempo;
 
+void print_solution(int* sol);
+void update_used_resources();
+void evaluate_and_verify_solution();
+
 void read_resources(FILE *file){
     int resources_amount, i, num, length;
     char * line = NULL;
     size_t len = 0;
-    ssize_t read;
     
     getline(&line, &len, file);
     printf("resources: %s", line);
@@ -110,7 +117,6 @@ void read_machines(FILE *file){
     int machines_amount, i, j, num, length;
     char * line = NULL;
     size_t len = 0;
-    ssize_t read;
     
     getline(&line, &len, file);
     printf("machines: %d\n", atoi(line));
@@ -129,10 +135,10 @@ void read_machines(FILE *file){
         sscanf( line, "%d%n", &num, &length);
         var.machines[i].location = num;
         //getting capacities
-        printf("getting capacities\n");
+        //printf("getting capacities\n");
         var.machines[i].capacities = malloc(sizeof(int)*var.resources_amount);
         var.machines[i].resources_used = malloc(sizeof(int)*var.resources_amount);
-        printf("ra alone: %d\n", var.resources_amount);
+        //printf("ra alone: %d\n", var.resources_amount);
         //var.machines[i].transient_resources_used = malloc(sizeof(int)*var.resources_amount);
         //printf("Capacity:\n");
         for(j=0; j < var.resources_amount; j++){
@@ -167,7 +173,6 @@ void read_services(FILE *file){
     int services_amount, i, j, num, length;
     char * line = NULL;
     size_t len = 0;
-    ssize_t read;
     
     getline(&line, &len, file);
     printf("services: %s", line);
@@ -200,7 +205,6 @@ void read_processes(FILE *file){
     int processes_amount, i, j, num, length;
     char * line = NULL;
     size_t len = 0;
-    ssize_t read;
     
     getline(&line, &len, file);
     printf("processes: %s", line);
@@ -238,7 +242,6 @@ void read_balance_cost(FILE *file){
     int balance_costs_amount, i, j, num, length;
     char * line = NULL;
     size_t len = 0;
-    ssize_t read;
     
     getline(&line, &len, file);
     printf("balance costs: %s\n", line);
@@ -277,7 +280,6 @@ void read_costs(FILE *file){
     int num, length;
     char * line = NULL;
     size_t len = 0;
-    ssize_t read;
     
     getline(&line, &len, file);
     
@@ -322,7 +324,6 @@ void read_initial_solution(char *filename){
     int j, num, length;
     char * line = NULL;
     size_t len = 0;
-    ssize_t read;
     
     if ( file == 0 ){
         printf( "\nCould not open Initial Solution File\n" );
@@ -344,13 +345,15 @@ void read_initial_solution(char *filename){
             line += length;
         }
         //sol.process_asignations = process_asignations;
+        update_used_resources();
+        evaluate_and_verify_solution();
         printf("Ended reading initial solution\n\n");
     }
 }
 void write_solution(char *filename){}
 
 int max(int value1, int value2){
-    value1 > value2? value1 : value2;
+    return value1 > value2? value1 : value2;
 }
 void update_used_resources(){
     int i, j, k, sum;
@@ -368,67 +371,6 @@ void update_used_resources(){
 int available_resources(int machine, int resource){
     return var.machines[machine].capacities[resource]-var.machines[machine].resources_used[resource];
 }
-/*int solution_qualifies(struct solution solution){
-    int i,j, k;
-    //verify capacity constraints
-    for(i=0; i < var.machines_amount; i++){
-        //printf("maquina %d\n",i);
-        for(j=0; j < var.resources_amount; j++){
-            int capacity_of_resource_j = var.machines[i].capacities[j];
-            int requirements_of_resource_j = 0;
-            for(k=0; k < var.processes_amount; k++){
-                if(solution.process_asignations[k]==i){
-                    requirements_of_resource_j += var.processes[k].requirements[j];
-                }    
-            }
-            if(requirements_of_resource_j > capacity_of_resource_j){
-                printf("No hay suficiente capacidad del recurso %d en la máquina %d\n", j, i);
-                return 0;  
-            } 
-        }
-    }
-    printf("capacity constraint approved");
-    //verify conflict constraints
-    int processes_same_service_per_machine[var.services_amount][var.machines_amount];
-    int service, machine;
-    for(i=0; i < var.processes_amount; i++){
-        service = var.processes[i].service;
-        machine = solution.process_asignations[i];
-        processes_same_service_per_machine[service][machine]++;
-        if(processes_same_service_per_machine[service][machine] > 1 ){
-            printf("There are 2 processes of service %d in the machine %d", service, machine);
-        }
-    }
-    
-    //verify services constraints
-    for(i=0; i<var.services_amount; i++){
-        int spread_min = var.services[i].spread_min;
-        int spread_location[var.machines_amount]; //worst case scenario: each machine belongs to a different location
-        int spread_amount = 0;
-        for(j=0; j < var.processes_amount; j++ ){
-            if(solution.process_asignations[j] == i){
-                int location = var.machines[solution.process_asignations[j]].location;
-                for(k=0; k < spread_amount; k++){
-                    if(location == spread_location[k]) break;
-                }
-                if(k == spread_amount){
-                    spread_amount++;
-                }
-            }
-        }
-        if(spread_amount < spread_min ){
-            printf("El servicio %d no cumple con spreadmin, spread: %d, spread_min: %d", i, spread_amount, spread_min);
-            return 0;
-        }
-    }
-    printf("spread constraint approved");
-    
-    //verify dependency constraints
-    
-    //verify transient constraints
-    
-    return 1;
-}*/
 struct possible_moves resizeOptions(struct possible_moves moves) {
     int i,j;
     
@@ -471,7 +413,7 @@ struct possible_moves resizeOptions(struct possible_moves moves) {
 
 double evaluate_solution(){
     double pmc = 0, smc = 0, mmc = 0, lc = 0, bc = 0;
-    int i, j, k;
+    int i, j;
     //process move costs
     for(i=0; i < var.processes_amount; i++){
         if(sol.initial_solution[i] != sol.process_asignations[i]){
@@ -498,7 +440,7 @@ double evaluate_solution(){
     //load costs
     for(i=0; i < var.machines_amount; i++){
         for(j=0; j < var.resources_amount; j++){
-            printf("ma: %d, ra: %d, wlc: %d, sc: %d\n", var.machines_amount, var.resources_amount, var.resources[j].weight_load_cost, var.machines[i].safety_capacities[0]);
+            //printf("ma: %d, ra: %d, wlc: %d, sc: %d\n", var.machines_amount, var.resources_amount, var.resources[j].weight_load_cost, var.machines[i].safety_capacities[0]);
             lc += var.resources[j].weight_load_cost*max(0, (var.machines[i].capacities[j]-var.machines[i].safety_capacities[j]));
         }
     }
@@ -513,9 +455,10 @@ double evaluate_solution(){
             bc += weight*max(0,target*available_resources(j, resource_two)-available_resources(j, resource_one));
         }
     }
-    
     sol.value = var.process_move_cost*pmc+var.service_move_cost*smc+var.machine_move_cost*mmc+lc+bc;
-    printf("New solution value: %lf\n", sol.value);
+    
+    printf("Actual Solution: %f ", sol.value);
+    print_solution(sol.process_asignations);
     return var.process_move_cost*pmc+var.service_move_cost*smc+var.machine_move_cost*mmc+lc+bc;
 }
 void verify_best_solution(){
@@ -528,76 +471,137 @@ void verify_best_solution(){
         for(i=0; i < var.processes_amount; i++){
             sol.best_process_asignations[i] = sol.process_asignations[i];
         }
+        printf("Best solution value: %lf\n", sol.value);
         //printf("almost done");
     }
     //printf("End of Verify\n");
 }
 void evaluate_and_verify_solution(){
-    printf("start evaluating");
+    //printf("start evaluating");
     evaluate_solution();
-    printf("end evaluating and starting verify");
+    //printf("end evaluating and starting verify");
     verify_best_solution();
 }
 
-void print_solution(){
+void print_solution(int* sol){
     int i;
-    printf("Greedy Proccess Asignations\n");
-    for(i=0; i<var.processes_amount; i++){
-        printf("Process %d assigned to machine %d\n", i, sol.process_asignations[i]);
-    }
-    printf("End of Proccess Asignations\n\n");
+    for(i=0; i < var.processes_amount; i++){
+		printf(" %d", sol[i]);
+	}
+	printf("\n");
 }
+void print_solution_to_file(int* sol){
+    FILE *file;
+    file = fopen("final_solution.txt", "w");
+    int i;
+    fprintf(file, "%d", sol[0]);
+    for(i=1; i < var.processes_amount; i++){
+		fprintf(file, " %d", sol[i]);
+	}
+}
+
 struct possible_moves get_possible_moves(int process_number){
     struct possible_moves moves;
     moves.possible_moves = malloc(var.machines_amount*sizeof(int));
     moves.length = var.machines_amount;
-    int i, j, k;
+    int i, j, k, l;
     
     //create initial array
     for(i=0; i < moves.length; i++){
         moves.possible_moves[i] = i;
     }
     
-    //filtering by capacity
-    for(i=0; i < var.machines_amount; i++){
-        for(j=0; j < var.processes_amount; j++){
-            if(available_resources(i,j) < var.processes[process_number].requirements[j]){
-                moves.possible_moves[i] = -1;
-                break;
-            }
+    //filtering by capacity : revisado
+    for(i=0; i < moves.length; i++){
+        for(j=0; j < var.resources_amount; j++){
+			if(available_resources(moves.possible_moves[i],j) < var.processes[process_number].requirements[j]){
+				moves.possible_moves[i] = -1;
+				break;
+			}
         }
     }
     moves = resizeOptions(moves);
-    return moves;
+    printf("Filtered by capacity\n");
+    //return moves;
     
     //filtering by service constraint
-    /*int service = var.processes[process_number].service;
-    for(i=0; i < process_number; i++){
-        if(i != process_number){
-            moves.possible_moves[sol.process_asignations[i]] = -1;
-        }
+    int service = var.processes[process_number].service;
+    for(i = 0; i < process_number; i++){
+		for(j = 0; j < moves.length; j++){
+			if(i != process_number && var.processes[i].service == service && sol.process_asignations[i] == moves.possible_moves[j]){
+				moves.possible_moves[j] = -1;
+			}
+		}
     }
     moves = resizeOptions(moves);
+    printf("Filtered by service\n");
     
     //filtering by dependency
-    //revisar todas las maquinas que cuenten con mis dependencias y que no queden dependientes de mi no cubiertos
-    service = var.processes[process_number].service;
-    for(i=0; i < var.machines_amount; i++){
-        
-        
-    }
-    //elegir una maquina, sacar su ubicacion, obtener todas 
-    
+    //revisar todas las maquinas en el vecindario que cuenten con mis dependencias y que no queden dependientes de mi no cubiertos
+    int* dependencies = var.services[service].dependent_on_service;
+    int dependencies_amount = var.services[service].amount_of_dependencies;
+    int remaining_dependencies = dependencies_amount;
+	for(i=0; i< moves.length && remaining_dependencies > 0; i++){
+		int neighborhood = var.machines[moves.possible_moves[i]].neighborhood;
+		for(j=0; j < var.machines_amount && remaining_dependencies == 0; j++){
+			if( var.machines[j].neighborhood == neighborhood ){
+				for(k = 0; k < var.processes_amount && remaining_dependencies > 0; k++){
+					if(sol.process_asignations[k] == j){
+						for(l = 0; l < dependencies_amount || remaining_dependencies > 0; l++){
+							if(dependencies[l] == var.processes[k].service){
+								dependencies[l] == -1;
+								remaining_dependencies--;
+								if(remaining_dependencies == 0){
+									//todas las depepndencias estan cubiertas :D
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	moves = resizeOptions(moves);
+	printf("Filtered by dependencies\n");
+	
+	//en el peor caso, habrá como máximo una location por maquina
+	int locations_for_service[var.machines_amount], locations_amount = 0;
+	for(i=0; i < var.machines_amount; i++){
+		locations_for_service[i] = -1;
+	}
     
     //filtering spread
+    int aux = sol.process_asignations[process_number];
+    for(k=0; k < moves.length; k++){
+		sol.process_asignations[process_number] = moves.possible_moves[k];
+		for(i=0; i < var.processes_amount && locations_amount < var.services[service].spread_min; i++){
+			if(var.processes[i].service == service){
+				int location = var.machines[sol.process_asignations[i]].location;
+				for(j=0; j < var.machines_amount && locations_amount < var.services[service].spread_min; j++){
+					if(locations_for_service[j] == location) break;
+					else if(locations_for_service[j] == -1){
+						locations_for_service[j] = location;
+						locations_amount++;
+					}
+				}
+			}
+		}
+		if(locations_amount < var.services[service].spread_min){
+			moves.possible_moves[k] = -1;
+		}
+		moves = resizeOptions(moves);
+	}
+	sol.process_asignations[process_number] = aux;
+	printf("Filtered by spread\n");
+	
     
     moves = resizeOptions(moves);
-    return moves;*/
+    return moves;
 }
 
 void pick_best_option(struct possible_moves moves, int process){
     if(moves.length){
-        int aux = sol.process_asignations[process], r, machine, i;
+        int r, machine, i;
         double min_value = -1, result;
         for(i=0; i < moves.length; i++){
             r = rand() % moves.length;
@@ -627,7 +631,7 @@ void pick_option(struct possible_moves moves, int process){
 }
 void greedy(){
     //guardar la suma de recursos que necesitan todos los procesos
-    int i,j,k, proccesses_resources[var.processes_amount][2];
+    int i,j, proccesses_resources[var.processes_amount][2];
     
     for(i=0; i < var.processes_amount; i++){
         proccesses_resources[i][0] = i;
@@ -675,46 +679,76 @@ void greedy(){
 }
 
 void initialize_tabu_list(int tabu_list_size){
-    tabu.list = malloc(tabu_list_size*sizeof(int));
+    tabu.list = malloc(tabu_list_size*sizeof(struct tabu_item));
     tabu.length = tabu_list_size;
     int i;
+    struct tabu_item item;
+    item.process = -1;
+    item.machine = -1;
     for(i=0; i < tabu.length; i++){
-        tabu.list[i] = -1;
+        tabu.list[i] = item;
     }
 }
-int is_tabu(int process){
+int is_tabu(int process, int machine){
     int i;
     for(i = 0; i < tabu.length; i++){
-        if(tabu.list[i] == process){ return 1; }
+        if(tabu.list[i].process == process && tabu.list[i].machine == machine){ return 1; }
     }
     return 0;
 }
-int add_tabu(int process){
+int is_valid(int process, int machine){
+	sol.process_asignations[process] = machine;
+	update_used_resources();
+	//capacities
+	
+	//servicios
+	int service = var.processes[process].service, i;
+	for(i=0; i<var.processes_amount; i++){
+		if(i != process && sol.process_asignations[i] == machine && var.processes[i].service == service) return 0;
+	}
+	//spread min
+	//service dependencies
+	//transient
+	
+	
+	return 1;
+}
+void add_tabu(int process, int machine){
     int i;
     for(i=1; i < tabu.length; i++){
         tabu.list[i-1] = tabu.list[i];
     }
-    tabu.list[tabu.length-1] = process;
+    struct tabu_item item;
+    item.process = process;
+    item.machine = machine;
+    tabu.list[tabu.length-1] = item;
 }
 void tabu_search(){
     //printf("Entro a TS!");
-    int i, process;
-    struct possible_moves moves;
+    int process, machine;
     //elegir un proceso random
     
-    //while(((float)(clock() - tiempo.start))/CLOCKS_PER_SEC < tiempo.limit){
+    while(((float)(clock() - tiempo.start))/CLOCKS_PER_SEC * 100 < tiempo.limit){
+		//printf("tiempo pasado: %f, tiempo limite: %d\n", ((float)(clock() - tiempo.start))/CLOCKS_PER_SEC * 100, tiempo.limit); 
     //for(i=0; i < 2; i++){
         
         process = rand() % var.processes_amount;
-        while(is_tabu(process)){
-            process = rand() % var.processes_amount;    
-        }
-        moves = get_possible_moves(process);
+        machine = rand() % var.machines_amount;
         
-        pick_option(moves, process);
-        add_tabu(process);
-        free(moves.possible_moves);
-    //}
+        //printf("TS while start\n");
+        while(is_tabu(process, machine) || !is_valid(process, machine)){
+			//printf("tabu: %d, valid: %d\n", is_tabu(process, machine), is_valid(process, machine));
+            process = rand() % var.processes_amount;
+			machine = rand() % var.machines_amount;    
+			//printf("TS while loop\n");
+        }
+        //printf("TS while end\n");
+        
+        sol.process_asignations[process] = machine;
+        update_used_resources();
+        evaluate_and_verify_solution();
+        add_tabu(process, machine);
+    }
 }
 
 int main( int argc, char *argv[] ){
@@ -727,17 +761,20 @@ int main( int argc, char *argv[] ){
     //printf("End reading solution;\n");
     //hasta aca va todo bien
     evaluate_and_verify_solution();
-    initialize_tabu_list(1);
+    initialize_tabu_list(2);
     
         //falta que se filtre mejor las opciones 
         //y que el greedy elija las mejores opciones
     //printf("entrando a Greedy");
     greedy();
-    //printf("Sali de Greedy!");
+    printf("\nGreedy Ended\n");
     tabu_search();
+    printf("TS Ended\n");
     
     //print solution
-    print_solution();
+    printf("Best Solution: %f ", sol.best_value);
+    print_solution(sol.best_process_asignations);
+    print_solution_to_file(sol.best_process_asignations);
     
     return 0;
 }
